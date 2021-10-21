@@ -12,6 +12,7 @@ interface User {
 }
 
 interface AuthContextData {
+  signOut: () => void;
   user: User | null;
   signInUrl: string;
 }
@@ -41,6 +42,24 @@ export function AuthProvider({ children }: AuthProvider) {
     setUser(user);
   }
 
+  function signOut() {
+    setUser(null);
+
+    localStorage.removeItem("@dowhile:token");
+  }
+
+  useEffect(() => {
+    const token = localStorage.getItem("@dowhile:token");
+
+    if (token) {
+      api.defaults.headers.common.authorization = `Bearer ${token}`;
+
+      api.get<User>("/user/profile").then((response) => {
+        setUser(response.data);
+      });
+    }
+  }, []);
+
   useEffect(() => {
     const url = window.location.href;
     const hasGithubCode = url.includes("?code=");
@@ -55,7 +74,7 @@ export function AuthProvider({ children }: AuthProvider) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, signInUrl }}>
+    <AuthContext.Provider value={{ signOut, user, signInUrl }}>
       {children}
     </AuthContext.Provider>
   );
